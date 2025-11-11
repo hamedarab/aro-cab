@@ -6,9 +6,9 @@
 ## Context
 This ADR refines the architecture for an inter-city ride-sharing platform in Iran, inspired by Snap/Uber, with a focus on Tehran-origin trips to Mazandaran, Gilan, and Qazvin. 
 
-It aligns observability and traceability under the broader auditability goal to ensure comprehensive monitoring, logging, and compliance. Additionally. 
+We align observability and traceability under the broader auditability goal to ensure comprehensive monitoring, logging, and compliance. Additionally. 
 
-It also introduces responsiveness (quick system reactions to user inputs/events) and scalability (ability to handle growth without degradation) as explicit goals. These enhancements address traditional inter-city transport issues: **low passenger satisfaction, and poor safety.** 
+We also introduces responsiveness (quick system reactions to user inputs/events) and scalability (ability to handle growth without degradation) as explicit goals. These enhancements address traditional inter-city transport issues: **low passenger satisfaction, and poor safety.** 
 
 The platform aims to organize trips, improving oversight, satisfaction, and safety while enabling regulatory alignment.
 
@@ -29,6 +29,19 @@ _**A core justification for this project is to organize and regulate inter-city 
 - **Responsiveness**: Sub-second reactions to events (e.g., location updates, alerts).
 - **Scalability**: Elastic handling of load spikes (e.g., auto-scaling for peaks).
 - **Operational Focus**: Dashboards for monitoring/inspection, tracking for visibility.
+
+---
+### Business Goals
+- Organize inter-city transport and ensure passenger safety.
+- Increase satisfaction through real-time transparency.
+- Enable regulatory oversight and compliance.
+
+### Technical Goals
+- Sub-200ms response times.
+- 99.9% uptime.
+- Full observability and traceability under auditability.
+- Responsive scaling for peak travel seasons.
+---
 
 ### Concurrent User Projections
 - **Drivers (Fixed Pool)**: 500-1,000 online for both scales (optimized for northern routes; ~3-hour trips).
@@ -56,10 +69,18 @@ flowchart LR
 ```
 
 ## Decision
-* Refine the microservices architecture to integrate observability/traceability under auditability, while embedding responsiveness and scalability throughout. 
-* Use self-managed components on Rooz-e-Aval infrastructure. 
-_Illustrative; final stack in separate document.[TODO link to ADR]_
 
+## Decision
+
+We decided to:
+1. Adopt a microservices architecture with embedded observability and traceability as first-class auditability features.
+2. Host all core services on self-managed Rooz-e-Aval infrastructure.
+3. Implement responsiveness and scalability through:
+   - HTTP/2 + WebSockets + gRPC protocols.
+   - Kubernetes HPA for horizontal scaling.
+   - Prometheus + OpenTelemetry for metrics and traces.
+
+_Illustrative; final stack in separate document.[TODO link to ADR]_
 
 ### Network Layer  
 **Supports responsive comms, scalable distribution, and protocol-specific handling for real-time vs. web service calls.**
