@@ -70,8 +70,6 @@ flowchart LR
 
 ## Decision
 
-## Decision
-
 We decided to:
 1. Adopt a microservices architecture with embedded observability and traceability as first-class auditability features.
 2. Host all core services on self-managed Rooz-e-Aval infrastructure.
@@ -206,3 +204,12 @@ graph TD
     Action --> Event
     Alert --> Dashboard
 ```
+
+## Consequences
+- Increased observability adds minor overhead (~5-10%) in latency.
+- Rooz-e-Aval self-management implies higher DevOps responsibility.
+- Clear separation of protocols simplifies scaling but adds gateway complexity.
+
+## Risk factors
+...?!
+
