@@ -1,4 +1,4 @@
-# ADR-007: Enhancing Observability, Traceability, Auditability, Responsiveness, and Scalability for Inter-City Ride-Sharing Platform
+# ADR-008: Inter-City Ride-Sharing Platform
 
 ## Status
 **Proposed**
@@ -38,8 +38,8 @@ _**A core justification for this project is to organize and regulate inter-city 
 - **Peak Loads**: 2-3x higher (e.g., holidays).
 
 ### Infrastructure Constraints
-- **Localization**: Rooz-e-Aval infrastructure or on-premise; self-managed tools (e.g., Kubernetes, PostgreSQL/SQL Server).
-- **System Components**: Mobile apps, backend, admin dashboard.
+- **Localization**: Rooz-e-Aval infrastructure or on-premise; self-managed tools (e.g., Kubernetes, PostgreSQL/SQL Server, kafka, etc.).
+- **System Components**: Mobile apps, backend, admin/operational dashboards.
 - **Challenges**: Real-time tracking/security; audit trails; responsive scaling.
 
 **High-Level System Flow with Enhanced Goals** (Incorporating observability and scalability):
@@ -57,25 +57,58 @@ flowchart LR
 
 ## Decision
 * Refine the microservices architecture to integrate observability/traceability under auditability, while embedding responsiveness and scalability throughout. 
-* Use self-managed components on Rooz-e-Aval infrastructure. _Illustrative; final stack in separate document.[TODO link to ADR]_
+* Use self-managed components on Rooz-e-Aval infrastructure. 
+_Illustrative; final stack in separate document.[TODO link to ADR]_
 
-### Network Layer
-Supports responsive comms and scalable distribution.
 
-- **Load Balancer**: e.g., NGINX/HAProxy/APISIX with health checks.
-  - Initial: 1,000-5,000 connections.
-  - Scaled: 20,000-100,000 via auto-provisioning.
-- **Protocols**: HTTP/2, WebSockets for responsive real-time updates.
-- **Security/Auditability**: WAF (e.g., ModSecurity); immutable network logs.
-- **Scalability/Responsiveness**: Dynamic routing; low-latency edges.
+### Network Layer  
+**Supports responsive comms, scalable distribution, and protocol-specific handling for real-time vs. web service calls.**
+
+- **Load Balancer**: e.g., NGINX/HAProxy/APISIX with health checks and protocol-aware routing.  
+  - **Initial**: 1,000–5,000 concurrent connections.  
+  - **Scaled**: 20,000–100,000 via auto-provisioning and horizontal scaling.  
+  - **Protocol Routing**:  
+    - **HTTP/2 or HTTP/3 (QUIC)** → REST/gRPC APIs (web service calls).  
+    - **WebSockets (wss://)** → Real-time bidirectional streams.  
+    - **gRPC over HTTP/2** → Internal microservice calls (high-performance, typed contracts).
+
+- **Protocols – Detailed Use Cases**:
+
+  | Protocol       | Primary Use Case                     | Why It Fits                                                                 | Performance Notes                                                                 |
+  |----------------|--------------------------------------|-----------------------------------------------------------------------------|-----------------------------------------------------------------------------------|
+  | **HTTP/2**     | RESTful web service calls (e.g., trip booking, user auth, payment init) | Multiplexing, header compression, server push; reduces latency for API calls | Ideal for bursty, request-response traffic; supports 100s of concurrent streams per connection |
+  | **HTTP/3 (QUIC)** | Future-proof web service calls (optional upgrade path) | 0-RTT connection resumption, better mobile performance on lossy networks | Recommended for mobile clients; self-managed via Caddy or custom QUIC-aware LB |
+  | **WebSockets** | Real-time updates (location tracking, trip status, chat, SOS alerts) | Full-duplex, persistent, low overhead after handshake | Essential for driver/passenger live sync; sticky sessions required |
+  | **gRPC**       | Inter-service communication (matching, pricing, audit events) | Efficient binary serialization (Protobuf), streaming support | Use internally; terminate at API gateway for external clients |
+
+- **Security & Auditability**:  
+  - WAF: e.g., ModSecurity or Coraza (open-source) with rules for OWASP Top 10.  
+  - TLS 1.3 everywhere; mTLS for internal gRPC.  
+  - Immutable network logs: Forward access/error logs to centralized observability (e.g., Loki/ELK) with tamper-proof retention.
+
+- **Scalability & Responsiveness**:  
+  - **Dynamic Routing**: Path-based routing (e.g., `/api/*` → HTTP/2, `/ws/*` → WebSocket).  
+  - **Low-Latency Edges**: Deploy edge terminators in Rooz-e-Aval regions closest to Tehran/northern provinces.  
+  - **Connection Management**:  
+    - Reuse TCP connections via keep-alive.  
+    - WebSocket ping/pong for heartbeat and fast failure detection.  
+  - **Rate Limiting & Backpressure**: Per-IP and per-user throttling at LB to protect real-time streams.
 
 **Network Goals Alignment Table**:
 
-| Goal                | Implementation                       | Initial Impact | Scaled Impact |
-|---------------------|--------------------------------------|---------------|---------------|
-| Responsiveness     | WebSockets for instant updates      | Sub-second    | Cached edges  |
-| Scalability        | Auto-scaling balancers              | Basic         | Cluster mode  |
-| Auditability       | Logged traffic (observability via metrics) | Basic traces | Full spans    |
+| Goal                | Protocol/Mechanism                          | Initial Impact               | Scaled Impact                     |
+|---------------------|---------------------------------------------|------------------------------|-----------------------------------|
+| **Responsiveness**  | WebSockets + HTTP/2 multiplexing            | <100ms update delivery       | Cached + edge-terminated streams  |
+| **Scalability**     | Auto-scaling LB + protocol-aware clustering | Handles 5k conn/node         | 100k+ via sharded LB instances     |
+| **Auditability**    | Immutable logs + request tracing headers    | Basic access logs            | Full correlation IDs across spans |
+| **Security**        | TLS 1.3, WAF, mTLS for gRPC                 | Encrypted at rest/in-flight  | Zero-trust enforced at edge       |
+
+**Recommendation Summary**:  
+- Use **HTTP/2** as default for all API calls.  
+- Use **WebSockets** exclusively for real-time features.  
+- Introduce **gRPC** internally for microservices (via service mesh if needed later).  
+- Plan for **HTTP/3** as a non-blocking upgrade for mobile resilience.  
+- Enforce **sticky sessions** only for WebSockets; stateless for HTTP/gRPC.
 
 ### Infrastructure Layer
 Enables scalable resources with observable/traceable operations.
@@ -83,7 +116,7 @@ Enables scalable resources with observable/traceable operations.
 - **Provider**: Rooz-e-Aval for VMs/scaling.
   - Initial: 2-4 instances.
   - Scaled: Auto-scale to 40-80 (triggers: CPU >70%, requests >400/s).
-- **Database**: e.g., PostgreSQL/SQL Server (replicas) + Redis.
+- **Database**: RDBMS (e.g., PostgreSQL, MSSQL) for structured data with replicas, and NoSQL (e.g., Cassandra for distributed storage, Redis for caching/pub-sub).
   - Auditability: Immutable logs with versioned edits; observability metrics on queries.
 - **Message Queue**: e.g., RabbitMQ/Kafka for async tasks.
   - Traceability: Distributed tracing (e.g., Jaeger integration).
@@ -152,29 +185,3 @@ graph TD
     Action --> Event
     Alert --> Dashboard
 ```
-
-## Alternatives Considered
-- **Monolith with Built-In Logging**: Simpler traceability but poor scalability/responsiveness.
-- **Third-Party Observability (e.g., Datadog)**: Rejected for localization; self-managed preferred.
-- **Mutable-Only Systems**: Insufficient auditability; immutable with edits chosen.
-
-Chose integrated approach for regulatory alignment, safety, and growth.
-
-## Consequences
-### Positive
-- Comprehensive auditability with observability/traceability for better diagnostics/compliance.
-- Responsive/scalable design handles fixed drivers efficiently (initial ~5-10M IRR/month; scaled ~100-200M IRR/month).
-- Improved satisfaction/safety over traditional systems.
-
-### Negative
-- Increased complexity (e.g., tracing overhead).
-- Expertise for tools (e.g., OpenTelemetry).
-
-### Risks & Mitigations
-- Performance degradation: Optimize traces; sampling.
-- Scalability limits: Test with load simulators.
-- Edit abuse: Strict RBAC.
-
-### Trade-Offs
-- Audit overhead vs. responsiveness; mitigated by async logging.
-- Localization vs. advanced tools; focus on core scalability.
