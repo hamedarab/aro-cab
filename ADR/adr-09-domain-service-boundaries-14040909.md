@@ -4,7 +4,7 @@
 # ADR 09: Domain Decomposition and Service Boundaries
 
 ## Status
-Accepted
+Proposed
 
 ## Context
 As defined in [ADR-08](./adr-08-inter-city-ride-sharing-14040820.md), we are adopting a transition strategy from a Modular Monolith to Microservices. To prevent a "Distributed Monolith" and ensure independent scalability of high-load components, we must clearly define Bounded Contexts based on Domain-Driven Design (DDD) principles.

@@ -1,7 +1,7 @@
 # ADR-08: Inter-City Ride-Sharing Platform
 
 ## Status
-**Proposed**
+Proposed
 
 ## Context
 This ADR refines the architecture for an inter-city ride-sharing platform in Iran, inspired by Snap/Uber, with a focus on Tehran-origin trips to Mazandaran, Gilan, and Qazvin. 

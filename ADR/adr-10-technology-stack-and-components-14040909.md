@@ -6,7 +6,9 @@
 Proposed
 
 ## Context
-Following the requirements in **[ADR-08](./adr-08-inter-city-ride-sharing-14040820.md)** (Sub-200ms latency, 99.9% uptime, Auditability) and the domain boundaries defined in **[ADR-09](./adr-09-domain-service-boundaries-14040820.md)**, we must select a technology stack that supports a **Modular Monolith to Microservices** transition.
+Following the requirements in **[ADR-08](./adr-08-inter-city-ride-sharing-14040820.md)** (Sub-200ms latency, 99.9% uptime, Auditability) 
+and the domain boundaries defined in **[ADR-09](./adr-09-domain-service-boundaries-14040820.md)**, 
+we must select a technology stack that supports a **[Modular Monolith to Microservices](https://martinfowler.com/bliki/MonolithFirst.html)** transition.
 
 The selection criteria are strict:
 1.  **Operational Feasibility:** Must run efficiently on self-managed "Rooz-e-Aval" infrastructure (Bare metal/VMs with Kubernetes).
@@ -23,7 +25,7 @@ supplemented by specific Cloud-Native technologies for data and orchestration.
 ### 1. Core Development Stack
 | Component | Technology | Justification |
 | :--- | :--- | :--- |
-| **Backend Framework** | **.NET 10** | Selected for its Native AOT capabilities (crucial for faster K8s startup), industry-leading Kestrel performance, and memory efficiency. It leverages the vast and mature .NET talent pool in Iran while offering strict modularity support for our "Modular Monolith" strategy. |
+| **Backend Framework** | **.NET 10** | Selected for its Native AOT capabilities (crucial for faster K8s startup), industry-leading Kestrel performance, and memory efficiency. It leverages the vast and mature .NET talent pool in Iran while offering strict modularity support for our "Modular Monolith" [strategy](https://samnewman.io/blog/2015/04/07/microservices-for-greenfield/). |
 | **Language** | **C# 14** | Utilizing the latest non-preview features (e.g., enhanced Records for immutable DTOs, advanced Pattern Matching) to ensure type safety and cleaner business logic. |
 | **Edge/High-Perf Service** | **Go (Golang)** | *Optional:* Reserved strictly for the **Real-time Tracking** or **Ingestion** layer if .NET footprint becomes too heavy for massive concurrent WebSocket connections (Sidecar pattern). |
 | **Real-Time Proto** | **SignalR (Core)** | Native support for WebSockets with automatic fallback transports. Handles connection management and broadcasting groups (e.g., "Drivers in Mazandaran") efficiently. |
