@@ -1,4 +1,4 @@
-# ADR-008: Inter-City Ride-Sharing Platform
+# ADR-08: Inter-City Ride-Sharing Platform
 
 ## Status
 **Proposed**

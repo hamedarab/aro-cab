@@ -19,11 +19,11 @@ We decided to decompose the backend architecture into the following Logical Conc
 *   **Responsibilities:** Management of extended user data, Driver documentation storage, Verification status tracking, and User Scoring/Rating calculation.
 *   **Key Data:** Profiles, Ratings, License Info.
 
-### 3. Trip Management *
+### 3. Trip Management
 *   **Responsibilities:** The core lifecycle machine of a trip (Created -> Matched -> Started -> Ended), trip history, and status management.
 *   **Key Data:** Trip Aggregate, Trip State Log.
 
-### 4. Matching Service *
+### 4. Matching Service
 *   **Responsibilities:** Algorithms to pair passengers with drivers, calculating capacity, handling cancellations, and managing supply/demand queues.
 *   **Key Data:** Active Drivers Queue, Passenger Request Queue.
 
