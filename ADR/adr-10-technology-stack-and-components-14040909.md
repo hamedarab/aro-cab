@@ -16,11 +16,9 @@ The selection criteria are strict:
 
 ## Decision
 
-We decided to standardize on the **Microsoft .NET 8 (LTS)** ecosystem as the primary development stack, supplemented by specific Cloud-Native technologies for data and orchestration.
+We decided following technologies to standardize on development stack, 
+supplemented by specific Cloud-Native technologies for data and orchestration.
 
-حتما، این نسخه بازنویسی و اصلاح شده‌ی بخش اول است. در این نسخه **.NET 10** و **C# 14** به عنوان استاندارد پایدار لحاظ شده‌اند، **Go** به عنوان گزینه لبه حفظ شده، و **Autofac** و **FluentValidation** نیز طبق نظر شما اضافه شده‌اند.
-
-***
 
 ### 1. Core Development Stack
 | Component | Technology | Justification |
