@@ -177,7 +177,7 @@ Implements business logic with built-in goals.
 
 - **Backend**: e.g., .NET Core/Go for concurrency.
   - Microservices: Add "Audit Service" for observability/traceability.
-  - Domain-Driven Design (DDD) contexts defined in **[ADR-09: Domain & Service Boundaries](./adr-01-domain-service-boundaries-14040909.md)**.
+  - Domain-Driven Design (DDD) contexts defined in **[ADR-09: Domain & Service Boundaries](./adr-09-domain-service-boundaries-14040909.md)**.
 - **Mobile Apps**:
   - Cross-Platform: Flutter (iOS/Android).
   - Native: Kotlin (Android), Swift (iOS).

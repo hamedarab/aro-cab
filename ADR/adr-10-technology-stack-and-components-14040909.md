@@ -67,30 +67,51 @@ We decided to standardize on the **Microsoft .NET 8 (LTS)** ecosystem as the pri
 
 Here is how the selected stack maps to the Bounded Contexts defined in **ADR-09**:
 
-| ADR-09 Domain | Tech implementation | Critical Component |
+| ADR-09 Domain | Tech Implementation | Critical Component & Storage Strategy |
 | :--- | :--- | :--- |
-| **Identity & Access** | Keycloak (Container) or Openiddict (.NET lib) | **OIDC/OAuth2** Provider. |
-| **1. User Profile** | .NET Web API | Postgres (JSONB for flexible profiles). |
-| **2. Trip Management** | .NET Web API | Postgres (ACID Transactions are vital here). |
-| **3. Matching Service** | .NET Worker Service | **In-Memory Logic** (Priority Queues) + Redis (Locks). |
-| **4. Real-time Tracking** | .NET (SignalR) / Go | **Redis Geo** for query, **Kafka** for position ingestion. |
-| **5. Payment & Wallet** | .NET Web API | Check Constraints in DB for non-negative balances. |
-| **6. Audit & Logging** | .NET Consumer Service | **Kafka Consumer Group** -> Elastic/TimescaleDB (Write-Optimized). |
-| **7. Safety & SOS** | .NET gRPC Service | Direct high-priority pipe to Admin Dashboard (WebSocket). |
-| **8. Admin & Ops** | Blazor Server or React | Reads from Read-replica DBs to avoid locking operational tables. |
+| **1. Identity & Access** | Keycloak (Containerized) | **Keycloak** for OIDC/OAuth2 flow, backed by SQL Server for identity persistence. |
+| **2. User Profile** | .NET 10 Web API | **SQL Server 2025** leveraging **JSON Columns** for flexible profile attributes (no need for NoSQL). |
+| **3. Trip Management** | .NET 10 Web API | **SQL Server In-Memory OLTP (Hekaton)** for the *ActiveTrips* table to handle concurrent state changes without locking. |
+| **4. Matching Service** | .NET 10 Worker Service | **In-Memory Logic** (Priority Queues) + **Redis** (Distributed Locks) to prevent double-booking. |
+| **5. Pricing & Fare** | .NET 10 Web API | **Redis Stack** for high-speed caching of Tariff rules + **SQL Server** for rule persistence. |
+| **6. Payment & Wallet** | .NET 10 Web API | **SQL Server** with strict ACID transactions and Constraint Checks for non-negative wallet balances. |
+| **7. Real-time Tracking** | .NET 10 (SignalR) / Go | **Redis Geo** for real-time spatial queries ("Drivers Nearby") + **Kafka** for buffering massive location ingress. |
+| **8. Safety & SOS** | .NET 10 gRPC Service | Direct high-priority pipe (WebSocket) to Admin Dashboard bypassing standard queues for sub-second alerts. |
+| **9. Notification** | .NET 10 Consumer | **Kafka Consumer** listening to events -> Sending SMS/Push via 3rd party providers. |
+| **10. Admin & Ops** | **Blazor (Server/WASM)** | Leveraging the team's C# skills for UI. Reads strictly from **DB Read Replicas** to avoid impacting operational transactional performance. |
+| **11. Audit & Logging** | .NET 10 Consumer | **Kafka Consumer Group** -> Offloading immutable logs to the selected Audit Store (Loki / ELK / SQL Columnstore). |
+
 
 ## Consequences
 
-### Positive
-*   **Team Alignment:** .NET is a unified ecosystem. Developers can move between "Payment" and "Tracking" easily.
-*   **Performance:** .NET 8 benchmarks compete well with Go and Rust for web workloads.
-*   **Audit-Ready:** By forcing all ops through Kafka and logging via OpenTelemetry, we satisfy the regulatory requirements out-of-the-box.
-*   **Cost Efficiency:** Using Linux-friendly stack (Postgres, Redis, Docker) significantly reduces licensing costs compared to a traditional Windows Server stack.
+### Positive (Strategic Advantages)
+*   **Unified Technical Ecosystem:** By standardizing the language and framework across Backend, Worker Services, and Operational Dashboards, we significantly reduce cognitive load. This facilitates internal mobility—engineers can seamlessly switch between "Core Business Logic" and "Internal Tools," accelerating onboarding and **Time-to-Market**.
+*   **Performance via Mature Engineering:** We are leveraging enterprise-grade, compiled runtimes and recognized database engines optimized for high concurrency. This allows us to achieve high-frequency processing and low latency on commodity hardware without resorting to niche or experimental technologies.
+*   **Strategic Talent Alignment:** The chosen stack corresponds to the deepest and most mature talent pool available in the local market. This minimizes hiring risks and ensures we can scale the engineering team rapidly with senior resources who require minimal upskilling.
+*   **Compliance by Design:** "Auditability" is not treated as a post-deployment feature but is architected into the system's core via distributed tracing standards and immutable event logs. This ensures regulatory alignment from Day 1.
 
-### Negative / Risks
-*   **Complexity of State:** Managing Kafka + Redis + Postgres requires skilled DevOps/SRE. We need to invest in automation (Ansible/Terraform) for Rooz-e-Aval infrastructure.
-*   **Learning Curve:** Developers familiar with traditional n-Tier MVC must adapt to Event-Driven consistency and gRPC contracts.
+### Negative (Accepted Complexities)
+*   **Operational Severity:** Owning a "Self-Managed" private cloud infrastructure gives us data sovereignty but places the entire burden of reliability (HA, DR, Patching) on our internal DevOps capabilities. We do not have the safety net of Managed Cloud PaaS providers.
+*   **Architectural Rigor Required:** Transitioning from a traditional layered architecture to an Event-Driven, Modular design introduces significant complexity regarding **Data Consistency**. Developers must adopt a disciplined mindset regarding *Idempotency* and *Eventual Consistency*, which requires strict governance and code reviews.
+*   **Heavier Initial Development:** Implementing robust isolation, resilience patterns (Circuit Breakers), and observability piping upfront increases the initial development effort compared to a rapid "Script-based" approach, but this investment pays off in stability at scale.
 
-## Risk Factors (To be addressed in Implementation Plan)
-1.  **Kafka Management:** Running durable Kafka clusters on self-managed VMs is non-trivial. *Mitigation:* Use Strimzi Operator on K8s.
-2.  **Network Partitioning:** In a distributed system (even modular monolith), network failures can cause split-brain in redis clusters. *Mitigation:* Robust retry polices (Polly) and Sentinel configuration.
+## Risk Factors (Mitigation Strategies)
+
+### 1. Complexity of Stateful Workloads in Orchestration
+**Risk:** Running mission-critical, stateful components (Databases, Event Streams) inside container orchestrators requires advanced operational maturity. Misconfiguration can lead to data loss or performance degradation.
+*   **Mitigation:**
+    *   Utilize **Kubernetes Operators** to automate complex lifecycle management (backups, upgrades, failovers).
+    *   Invest heavily in **Automated Disaster Recovery (DR)** drills.
+    *   Keep critical stateful storage on dedicated nodes or outside the orchestration layer if stability benchmarks are not met during load testing.
+
+### 2. Eventual Consistency & Integrity Gaps
+**Risk:** In distributed asynchronous flows, message duplication or out-of-order delivery can act silently to corrupt sensitive business data (e.g., wallet balances), largely due to network unreliability.
+*   **Mitigation:**
+    *   Enforce **Idempotency** at the API and Consumer level using unique request/event IDs.
+    *   Implement the **Outbox Pattern** to guarantee valid transaction boundaries between local database commits and event publishing.
+
+### 3. Distributed "Split-Brain" Scenarios
+**Risk:** Given the reliance on distributed caching and clustering, network partitioning within the data center could cause services to operate on stale or conflicting data.
+*   **Mitigation:**
+    *   Configure strict **Quorum** requirements for cluster leaders.
+    *   Implement widespread use of **Resilience Libraries** (Retries with Exponential Backoff, Bulkheads) to handle transient failures gracefully.

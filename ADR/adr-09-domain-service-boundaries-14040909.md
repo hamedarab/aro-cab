@@ -1,3 +1,6 @@
+
+**File Name:** `adr-09-domain-service-boundaries-14040820.md`
+
 # ADR 09: Domain Decomposition and Service Boundaries
 
 ## Status
@@ -8,8 +11,12 @@ As defined in [ADR-08](./adr-08-inter-city-ride-sharing-14040820.md), we are ado
 
 The system requires distinct handling of operational concerns (Booking, Utility) versus support concerns (Notifications, Audit) to meet the business goals of organized inter-city transport and regulatory compliance.
 
+For the mapping of these contexts to specific technologies (Data Stores, Protocols, Infrastructure), please refer to **[ADR-10: Backend Technology Stack](./adr-10-technology-stack-and-components-14040909.md)**.
+
 ## Decision
 We decided to decompose the backend architecture into the following Logical Concept Services (Bounded Contexts). In **Phase 1**, these will exist as separate modules/libraries within a unified solution. In **Phase 2**, critical domains (marked with *) will be extracted into independent Microservices.
+
+> **Note:** The specific component selection and storage strategy for each domain below is detailed in the **[Component-to-Domain Mapping](./adr-10-technology-stack-and-components-14040909.md#component-to-domain-mapping)** section of ADR-10.
 
 ### 1. Identity & Access Management (IAM)
 *   **Responsibilities:** User registration, Authentication (SSO/JWT), Role Management (Passenger/Driver/Operator), and Driver KYC (Know Your Customer) verification flows.
@@ -31,11 +38,11 @@ We decided to decompose the backend architecture into the following Logical Conc
 *   **Responsibilities:** Calculation of trip costs based on distance/time, Dynamic Pricing (surge pricing) logic, Discount codes, and Commission calculation.
 *   **Key Data:** Tariff Rules, Discount Coupons, Surge Multipliers.
 
-### 6. Payment & Wallet *
+### 6. Payment & Wallet 
 *   **Responsibilities:** Online payment gateway integration, Wallet management (Credit/Debit), and Driver Settlement (payouts).
 *   **Key Data:** Wallet Transactions, Ledgers, Gateway Logs.
 
-### 7. Real-time Tracking *
+### 7. Real-time Tracking 
 *   **Responsibilities:** High-frequency ingestion of Driver/Passenger locations, WebSocket connections, Breadcrumbs storage, and Geofencing triggers.
 *   **Key Data:** Geo-spatial Time-series data, Active Sessions.
 
@@ -51,7 +58,7 @@ We decided to decompose the backend architecture into the following Logical Conc
 *   **Responsibilities:** Back-office dashboard for monitoring active trips, applying restrictions (bans), inspection workflows, and operational reporting.
 *   **Key Data:** Admin Audit Logs, tickets.
 
-### 11. Audit & Logging Service *
+### 11. Audit & Logging Service 
 *   **Responsibilities:** As a first-class citizen for compliance; collecting sensitive business events, immutable logging, and query capabilities for regulatory oversight.
 *   **Key Data:** Immutable Event Store, Trace Logs.
 
