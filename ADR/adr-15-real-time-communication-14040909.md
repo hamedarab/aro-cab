@@ -3,7 +3,7 @@
 # ADR 15: Real-Time Communication Protocol Strategy
 
 ## Status
-Accepted
+Proposed
 
 ## Context
 As defined in **[ADR-08](./adr-08-inter-city-ride-sharing-14040820.md)**, the platform requires sub-second responsiveness for critical features such as Driver Location Tracking, Ride Matching, and SOS alerts. Reliability is paramount given the target environment involves inter-city travel with potentially unstable mobile network coverage (2G/3G/4G switching).
