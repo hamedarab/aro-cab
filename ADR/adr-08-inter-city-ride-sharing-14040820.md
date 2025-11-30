@@ -67,7 +67,82 @@ flowchart LR
     Security[Security Features] -->|Responsive Triggers| Backend
     Scaler[Auto-Scaler] -->|Handle Load| Backend
 ```
+---
 
+```mermaid
+flowchart LR
+    classDef svc fill:#f4f9ff,stroke:#1f78b4,stroke-width:1.5px,corner-radius:6px;
+    classDef entity fill:#fef6e4,stroke:#f4a261,stroke-width:1.5px,corner-radius:6px;
+    classDef infra fill:#f0fff4,stroke:#2a9d8f,stroke-width:1.5px,corner-radius:6px;
+    classDef queue fill:#e8f5fd,stroke:#1d6fa5,stroke-width:1.5px,corner-radius:30px;
+    classDef cache fill:#ffe5e5,stroke:#c53030,stroke-width:1.5px,corner-radius:6px,font-weight:bold;
+
+    subgraph Clients
+        RiderDriver[Passenger & Driver Apps]:::entity
+        Admin[Admin Dashboard]:::entity
+    end
+
+    subgraph DC["Data Center / Backend Infrastructure"]
+        
+        %% Backend Services Matrix (Using invisible subgraphs for layout)
+        subgraph Backend["Backend Services (Auto-scalable Microservices)"]
+            direction TB
+            subgraph Row1
+                direction LR
+                Identity[[Identity & Access]]:::svc
+                Profile[[User Profile]]:::svc
+                Trip[[Trip Management]]:::svc
+                Matching[[Matching Service]]:::svc
+            end
+            subgraph Row2
+                direction LR
+                Pricing[[Pricing & Fare]]:::svc
+                Payment[[Payment & Wallet]]:::svc
+                Tracking[[Real-time Tracking]]:::svc
+                Safety[[Safety & SOS]]:::svc
+            end
+            subgraph Row3
+                direction LR
+                Notify[[Notification]]:::svc
+                AdminOps[[Admin & Ops]]:::svc
+                Audit[[Audit & Logging]]:::svc
+            end
+        end
+
+        %% Database Cluster
+        subgraph DBCluster["Core DB Cluster"]
+            direction LR
+            DB1[(DB Node 1)]:::infra
+            DB2[(DB Node 2)]:::infra
+            DB3[(DB Node 3)]:::infra
+        end
+
+        Cache["🟥 Distributed Cache"]:::cache
+        MQ([== Async Queue ==]):::queue
+        Monitor[Monitoring & Alerts]:::infra
+    end
+
+    %% Styles to hide row borders
+    style Row1 fill:none,stroke:none
+    style Row2 fill:none,stroke:none
+    style Row3 fill:none,stroke:none
+
+    %% Connections
+    RiderDriver <-->|Request / Response| Backend
+    RiderDriver -->|Track & Location Updates| Backend
+    Admin -->|Oversight| Backend
+
+    Backend --> DB1
+    Backend --> DB2
+    Backend --> DB3
+    
+    Backend <--> Cache
+    Backend --> MQ
+    MQ --> Backend
+
+    Backend --> Monitor
+    Monitor -->|Alerts & KPIs| Admin
+```
 ## Decision
 
 We decided to:
@@ -79,6 +154,32 @@ We decided to:
    - Prometheus + OpenTelemetry for metrics and traces.
 
 _Illustrative; final stack in separate document.[TODO link to ADR]_
+
+### Application Layer
+Implements business logic with built-in goals.
+
+- **Backend**: e.g., Node.js/Go for concurrency.
+  - Microservices: Add "Audit Service" for observability/traceability.
+  - refer to 
+- **Mobile Apps**:
+  - Cross-Platform: Flutter (iOS/Android).
+  - Native: Kotlin (Android), Swift (iOS).
+  - Features: Responsive UI (e.g., real-time maps), SOS for security.
+- **Operational Dashboards**:
+  - Real-time views (active trips, metrics); inspection for compliance.
+  - 
+- **Trip Security/Tracking**:
+  - Anomaly detection; GPS updates (traceable logs).
+- **Auditability Enhancements**:
+  - Observability: Exposed metrics/endpoints for monitoring.
+  - Traceability: Request IDs propagated across services.
+  - Edits: Admin-controlled with immutable audit trails (e.g., blockchain-like logs for key events).
+- **Responsiveness/Scalability**:
+  - Async processing for non-blocking responses.
+  - Caching/sharding for scale; auto-retry mechanisms.
+- **Best Practices**:
+  - Rate limiting, geo-caching for northern routes.
+  - Compliance: Auditable records for government oversight.
 
 ### Network Layer  
 **Supports responsive comms, scalable distribution, and protocol-specific handling for real-time vs. web service calls.**
@@ -147,63 +248,6 @@ Enables scalable resources with observable/traceable operations.
   - Responsiveness: Circuit breakers (e.g., Hystrix-style) for fault tolerance.
   - Backup: Automated snapshots for audit integrity.
 
-**Scaling and Observability Flow**:
-```mermaid
-flowchart TD
-    Load[Monitor Load/Metrics] -->|Spike Detected| ScaleUp[Auto-Scale Resources]
-    ScaleUp -->|Trace Events| Tracing[Distributed Tracing]
-    Tracing -->|Observe| Dashboard[Grafana Dashboards]
-    Dashboard -->|Alert| Admin[Responsive Alerts]
-```
-
-### Application Layer
-Implements business logic with built-in goals.
-
-- **Backend**: e.g., Node.js/Go for concurrency.
-  - Microservices: Add "Audit Service" for observability/traceability.
-- **Mobile Apps**:
-  - Cross-Platform: Flutter (iOS/Android).
-  - Native: Kotlin (Android), Swift (iOS).
-  - Features: Responsive UI (e.g., real-time maps), SOS for security.
-- **Operational Dashboards**:
-  - Real-time views (active trips, metrics); inspection for compliance.
-- **Trip Security/Tracking**:
-  - Anomaly detection; GPS updates (traceable logs).
-- **Auditability Enhancements**:
-  - Observability: Exposed metrics/endpoints for monitoring.
-  - Traceability: Request IDs propagated across services.
-  - Edits: Admin-controlled with immutable audit trails (e.g., blockchain-like logs for key events).
-- **Responsiveness/Scalability**:
-  - Async processing for non-blocking responses.
-  - Caching/sharding for scale; auto-retry mechanisms.
-- **Best Practices**:
-  - Rate limiting, geo-caching for northern routes.
-  - Compliance: Auditable records for government oversight.
-
-**Goals Integration Diagram** (With auditability focus):
-```mermaid
-graph TD
-    subgraph "Auditability (incl. Observability & Traceability)"
-        Action[User Action] -->|Log & Trace| ImmutableLog[Immutable Storage]
-        ImmutableLog -->|Metrics| Observe[Observability Tools]
-        Observe -->|Spans| Trace[Traceability System]
-        Trace -->|Edit w/ History| Dashboard[Operational Dashboard]
-    end
-
-    subgraph "Responsiveness & Scalability"
-        Event[User Event] -->|Quick Process| Responsive[Async Handlers]
-        Responsive -->|Load Balance| Scale[Auto-Scalers]
-        Scale -->|Monitor| Observe
-    end
-
-    subgraph "Security & Tracking"
-        Trip[Trip] -->|Real-Time| Trace
-        Trip -->|Anomalies| Alert[Alerts]
-    end
-
-    Action --> Event
-    Alert --> Dashboard
-```
 
 ## Consequences
 - Increased observability adds minor overhead (~5-10%) in latency.
