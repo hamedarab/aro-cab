@@ -143,31 +143,47 @@ flowchart LR
     Backend --> Monitor
     Monitor -->|Alerts & KPIs| Admin
 ```
+
+
+Here is the consolidated and refined **Decision** section for your ADR, keeping the professional tone of a CTO/Architect and merging your specific requirements.
+	
 ## Decision
 
-We decided to:
-1. Adopt a microservices architecture with embedded observability and traceability as first-class auditability features.
-2. Host all core services on self-managed Rooz-e-Aval infrastructure.
-3. Implement responsiveness and scalability through:
-   - HTTP/2 + WebSockets + gRPC protocols.
-   - Kubernetes HPA for horizontal scaling.
-   - Prometheus + OpenTelemetry for metrics and traces.
 
-_Illustrative; final stack in separate document.[TODO link to ADR]_
+We decided to:
+
+1.  **Adopt a Pragmatic Microservices Strategy (Evolving from Modular Monolith)**
+    *   Start with a **Modular Monolith** organized by Domain-Driven Design (DDD) contexts to reduce initial operational complexity.
+    *   Plan for a phased decoupling of high-volatility/high-traffic domains (**Matching, Trip Management, Real-time Tracking, Payment**) into independent microservices as load increases alongside the **20x growth** target.
+    *   Implement an **Event-Driven Architecture** using **Kafka** to decouple services, ensure reliable message delivery, and feed real-time analytics and audit logs.
+
+2.  **Elevate Auditability to a First-Class Architectural Citizen**
+    *   Treat **Observability (Metrics, Logs) and Traceability** as non-negotiable requirements for regulatory compliance and operational oversight.
+    *   Enforce **OpenTelemetry** standards and immutable structured logging across all modules to ensure end-to-end request tracking and system health visibility (aiming for **99.9% uptime**).
+
+3.  **Ensure Responsiveness and Scalability via Modern Protocols & Infrastructure**
+    *   Achieve **sub-200ms latency** and handle real-time scenarios (Driver Location, SOS) using 
+		**gRPC** for inter-service communication and 
+		**WebSockets/HTTP/2** for client connectivity.
+    *   Host all core services on **self-managed "Rooz-e-Aval" infrastructure**, leveraging **Kubernetes** and **Horizontal Pod Autoscaling (HPA)** to manage load spikes elasticity.
+
+4.  **Align Technology Selection with Local Operational Realities**
+    *   Select the technology stack (e.g., Flutter, Go lang, .NET Core, SQL Server, Redis, Kafka) based on **ease of DevOps implementation** on self-hosted infrastructure.
+    *   Prioritize technologies with strong **talent availability in the Iranian market** and robust open-source community support to mitigate hiring risks and ensure maintainability.
+
 
 ### Application Layer
 Implements business logic with built-in goals.
 
-- **Backend**: e.g., Node.js/Go for concurrency.
+- **Backend**: e.g., .NET Core/Go for concurrency.
   - Microservices: Add "Audit Service" for observability/traceability.
-  - refer to 
+  - Domain-Driven Design (DDD) contexts defined in **[ADR-09: Domain & Service Boundaries](./adr-01-domain-service-boundaries-14040909.md)**.
 - **Mobile Apps**:
   - Cross-Platform: Flutter (iOS/Android).
   - Native: Kotlin (Android), Swift (iOS).
   - Features: Responsive UI (e.g., real-time maps), SOS for security.
 - **Operational Dashboards**:
   - Real-time views (active trips, metrics); inspection for compliance.
-  - 
 - **Trip Security/Tracking**:
   - Anomaly detection; GPS updates (traceable logs).
 - **Auditability Enhancements**:
